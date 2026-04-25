@@ -12,12 +12,8 @@
 </head>
 <body>
     <div class="app-container">
-        <header class="header pywebview-drag">
-            <div class="logo">
-                <img src="logo.png" alt="Ganttopia Logo" class="app-logo">
-                <h1>Ganttopia</h1>
-            </div>
-            <div class="controls pywebview-no-drag" style="flex: 1; display: flex; justify-content: flex-end;">
+        <header class="header">
+            <div class="controls" style="margin-left: auto;">
                 <div class="zoom-controls" style="display: flex; align-items: center; gap: 8px;">
                     <button id="btn-zoom-reset" class="btn btn-secondary" title="ズームをリセット">
                         <i class="ph ph-arrows-in"></i> 等倍
@@ -43,11 +39,6 @@
                         <i class="ph ph-plus"></i> タスク追加
                     </button>
                 </div>
-            </div>
-            <div class="window-controls pywebview-no-drag" style="display: flex; gap: 4px; margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--border);">
-                <button class="btn btn-text" onclick="window.pywebview.api.minimize_window()" style="padding: 6px;"><i class="ph ph-minus"></i></button>
-                <button class="btn btn-text" onclick="window.pywebview.api.toggle_maximize()" style="padding: 6px;"><i class="ph ph-square"></i></button>
-                <button class="btn btn-text hover-danger" onclick="window.pywebview.api.close_window()" style="padding: 6px; color: var(--danger);"><i class="ph ph-x"></i></button>
             </div>
         </header>
 
