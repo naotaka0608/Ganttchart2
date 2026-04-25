@@ -60,9 +60,11 @@ body {
     gap: 12px;
 }
 
-.logo i {
-    font-size: 28px;
-    color: var(--accent);
+.app-logo {
+    height: 32px;
+    width: 32px;
+    border-radius: 6px;
+    object-fit: cover;
 }
 
 .logo h1 {
