@@ -27,6 +27,8 @@ const elements = {
     btnExportList: document.getElementById('btn-export-list'),
     btnExportGantt: document.getElementById('btn-export-gantt'),
     btnToday: document.getElementById('btn-today'),
+    btnZoomReset: document.getElementById('btn-zoom-reset'),
+    zoomPercentage: document.getElementById('zoom-percentage'),
     scaleBtns: document.querySelectorAll('.scale-btn')
 };
 
@@ -37,6 +39,72 @@ elements.timelinePanel.addEventListener('scroll', () => {
 elements.taskListBody.addEventListener('scroll', () => {
     elements.timelinePanel.scrollTop = elements.taskListBody.scrollTop;
 });
+
+// Panning with Ctrl + Right Click
+let isPanning = false;
+let startPanX = 0;
+let startScrollLeft = 0;
+
+elements.timelinePanel.addEventListener('mousedown', (e) => {
+    if (e.button === 2) {
+        e.preventDefault();
+        isPanning = true;
+        startPanX = e.clientX;
+        startScrollLeft = elements.timelinePanel.scrollLeft;
+        document.body.style.cursor = 'grabbing';
+    }
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    const dx = e.clientX - startPanX;
+    elements.timelinePanel.scrollLeft = startScrollLeft - dx;
+});
+
+document.addEventListener('mouseup', (e) => {
+    if (isPanning && e.button === 2) {
+        isPanning = false;
+        document.body.style.cursor = 'default';
+    }
+});
+
+elements.timelinePanel.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+});
+
+
+// Zoom with Wheel
+elements.timelinePanel.addEventListener('wheel', (e) => {
+    e.preventDefault();
+        
+        const mouseX = e.clientX - elements.timelinePanel.getBoundingClientRect().left;
+        const scrollLeft = elements.timelinePanel.scrollLeft;
+        const centerDay = (scrollLeft + mouseX) / pxPerDay;
+        
+        const zoomFactor = e.deltaY > 0 ? 0.8 : 1.25; // down = zoom out, up = zoom in
+        let newPxPerDay = pxPerDay * zoomFactor;
+        
+        if (newPxPerDay < 1) newPxPerDay = 1;
+        if (newPxPerDay > 120) newPxPerDay = 120;
+        
+        pxPerDay = newPxPerDay;
+        
+        if (pxPerDay > 20) {
+            currentScale = 'day';
+        } else if (pxPerDay > 5) {
+            currentScale = 'week';
+        } else {
+            currentScale = 'month';
+        }
+        
+        elements.scaleBtns.forEach(b => b.classList.toggle('active', b.dataset.scale === currentScale));
+        
+        render();
+        updateZoomPercentage();
+        
+        elements.timelinePanel.scrollLeft = centerDay * pxPerDay - mouseX;
+}, { passive: false });
 
 // Scale switching
 elements.scaleBtns.forEach(btn => {
@@ -67,6 +135,13 @@ function setScale(scale) {
     
     elements.scaleBtns.forEach(b => b.classList.toggle('active', b.dataset.scale === scale));
     render();
+    updateZoomPercentage();
+}
+
+function updateZoomPercentage() {
+    if (!elements.zoomPercentage) return;
+    const percent = Math.round((pxPerDay / 40) * 100);
+    elements.zoomPercentage.textContent = `${percent}%`;
 }
 
 function scrollToToday() {
@@ -81,6 +156,12 @@ function scrollToToday() {
 // Today button
 elements.btnToday.addEventListener('click', () => {
     scrollToToday();
+});
+
+// Reset Zoom button
+elements.btnZoomReset.addEventListener('click', () => {
+    setScale('day');
+    setTimeout(scrollToToday, 50);
 });
 
 document.getElementById('btn-reset-baseline').addEventListener('click', () => {
@@ -426,6 +507,8 @@ function makeDraggable(bar, task) {
     let initialWidth = 0;
     
     bar.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // Only allow left click
+        
         if (e.target.classList.contains('resize-right')) {
             isResizingRight = true;
         } else if (e.target.classList.contains('resize-left')) {

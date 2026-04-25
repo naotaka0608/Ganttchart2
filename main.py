@@ -18,7 +18,7 @@ if __name__ == '__main__':
     
     # Create the webview window
     window = webview.create_window(
-        'Gantt Chart App',
+        'Ganttopia',
         'http://127.0.0.1:8000/',
         width=1200,
         height=800,

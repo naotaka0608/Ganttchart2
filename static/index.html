@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Gantt Chart</title>
+    <title>Ganttopia</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Phosphor Icons for modern icons -->
@@ -17,6 +17,12 @@
                 <h1>Gantt<span class="highlight">Flow</span></h1>
             </div>
             <div class="controls">
+                <div class="zoom-controls" style="display: flex; align-items: center; gap: 8px;">
+                    <button id="btn-zoom-reset" class="btn btn-secondary" title="ズームをリセット">
+                        <i class="ph ph-arrows-in"></i> 等倍
+                    </button>
+                    <span id="zoom-percentage" style="font-size: 13px; font-weight: 600; color: var(--text-secondary); width: 45px; text-align: right;">100%</span>
+                </div>
                 <button id="btn-today" class="btn btn-secondary">
                     <i class="ph ph-calendar-blank"></i> 今日
                 </button>
