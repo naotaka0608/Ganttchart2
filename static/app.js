@@ -822,13 +822,17 @@ elements.btnPageSave.addEventListener('click', async () => {
     const name = elements.pageNameInput.value.trim();
     if (!name) return;
     
-    await fetch('/api/pages', {
+    const res = await fetch('/api/pages', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ name: name, sort_order: pages.length })
     });
+    const newPage = await res.json();
+    
+    currentPageId = newPage.id; // 新しいページを現在のページに設定
     elements.pageModal.classList.remove('active');
     await fetchPages();
+    await fetchTasks(); // 新しいページ（空）を表示
 });
 
 elements.pageNameInput.addEventListener('keydown', (e) => {
