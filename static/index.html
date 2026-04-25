@@ -80,7 +80,7 @@
     </div>
 
     <!-- Modal for Adding/Editing Task -->
-    <div class="modal-overlay" id="task-modal">
+    <div class="modal" id="task-modal">
         <div class="modal-content glass-effect">
             <h2 id="modal-title">タスク追加</h2>
             <form id="task-form">
@@ -150,6 +150,33 @@
                     <button type="button" class="btn btn-danger" id="btn-delete" style="display: none;">削除</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Page Modal -->
+    <div id="page-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h2>新しいページを追加</h2>
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="page-name-input">ページ名</label>
+                <input type="text" id="page-name-input" placeholder="例: プロジェクトB" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px;">
+            </div>
+            <div class="modal-actions" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                <button id="btn-page-cancel" class="btn btn-secondary">キャンセル</button>
+                <button id="btn-page-save" class="btn btn-primary">作成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content" style="max-width: 420px;">
+            <h2 id="confirm-title">確認</h2>
+            <p id="confirm-message" style="margin-top: 16px; color: var(--text-secondary); line-height: 1.6;"></p>
+            <div class="modal-actions" style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
+                <button id="btn-confirm-cancel" class="btn btn-secondary">キャンセル</button>
+                <button id="btn-confirm-ok" class="btn btn-danger">削除する</button>
+            </div>
         </div>
     </div>
 

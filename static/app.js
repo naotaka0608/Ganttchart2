@@ -31,7 +31,11 @@ const elements = {
     zoomPercentage: document.getElementById('zoom-percentage'),
     scaleBtns: document.querySelectorAll('.scale-btn'),
     pageTabs: document.getElementById('page-tabs'),
-    btnAddPage: document.getElementById('btn-add-page')
+    btnAddPage: document.getElementById('btn-add-page'),
+    pageModal: document.getElementById('page-modal'),
+    pageNameInput: document.getElementById('page-name-input'),
+    btnPageSave: document.getElementById('btn-page-save'),
+    btnPageCancel: document.getElementById('btn-page-cancel')
 };
 
 let pages = [];
@@ -629,10 +633,41 @@ async function saveTask(data) {
 }
 
 async function deleteTask(id) {
-    if (!confirm('このタスクを削除してよろしいですか？')) return;
+    const ok = await showConfirm('タスクの削除', 'このタスクを削除してよろしいですか？');
+    if (!ok) return;
     await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
     await fetchTasks();
     closeModal();
+}
+
+function showConfirm(title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        
+        const btnOk = document.getElementById('btn-confirm-ok');
+        const btnCancel = document.getElementById('btn-confirm-cancel');
+        
+        const onOk = () => {
+            modal.classList.remove('active');
+            cleanup();
+            resolve(true);
+        };
+        const onCancel = () => {
+            modal.classList.remove('active');
+            cleanup();
+            resolve(false);
+        };
+        const cleanup = () => {
+            btnOk.removeEventListener('click', onOk);
+            btnCancel.removeEventListener('click', onCancel);
+        };
+        
+        btnOk.addEventListener('click', onOk);
+        btnCancel.addEventListener('click', onCancel);
+        modal.classList.add('active');
+    });
 }
 
 function openModal(task = null) {
@@ -774,7 +809,17 @@ function renderPages() {
 }
 
 async function addPage() {
-    const name = prompt('新しいページの名前を入力してください:', '新しいチャート');
+    elements.pageNameInput.value = '';
+    elements.pageModal.classList.add('active');
+    elements.pageNameInput.focus();
+}
+
+elements.btnPageCancel.addEventListener('click', () => {
+    elements.pageModal.classList.remove('active');
+});
+
+elements.btnPageSave.addEventListener('click', async () => {
+    const name = elements.pageNameInput.value.trim();
     if (!name) return;
     
     await fetch('/api/pages', {
@@ -782,8 +827,14 @@ async function addPage() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ name: name, sort_order: pages.length })
     });
+    elements.pageModal.classList.remove('active');
     await fetchPages();
-}
+});
+
+elements.pageNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') elements.btnPageSave.click();
+    if (e.key === 'Escape') elements.btnPageCancel.click();
+});
 
 async function editPageName(page, span) {
     const input = document.createElement('input');
@@ -817,7 +868,8 @@ async function editPageName(page, span) {
 }
 
 async function deletePage(id) {
-    if (!confirm('このページとその中のすべてのタスクを削除してよろしいですか？')) return;
+    const ok = await showConfirm('ページの削除', 'このページとその中のすべてのタスクを削除してよろしいですか？');
+    if (!ok) return;
     await fetch(`/api/pages/${id}`, { method: 'DELETE' });
     if (currentPageId === id) currentPageId = pages.find(p => p.id !== id)?.id || 1;
     await fetchPages();
