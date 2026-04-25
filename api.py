@@ -75,5 +75,13 @@ def export_gantt(db: Session = Depends(get_db)):
 
 # Serve static files
 import os
-os.makedirs("static", exist_ok=True)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+import sys
+
+def get_base_path():
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        return sys._MEIPASS
+    return os.path.dirname(os.path.abspath(__file__))
+
+static_path = os.path.join(get_base_path(), "static")
+os.makedirs(static_path, exist_ok=True)
+app.mount("/", StaticFiles(directory=static_path, html=True), name="static")

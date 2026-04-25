@@ -42,6 +42,9 @@ elements.scaleBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
         const scale = e.target.dataset.scale;
         setScale(scale);
+        if (scale === 'day') {
+            setTimeout(scrollToToday, 50);
+        }
     });
 });
 
