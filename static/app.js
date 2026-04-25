@@ -140,6 +140,8 @@ function render() {
 function renderTimelineHeader() {
     elements.timelineHeader.innerHTML = '';
     let curr = new Date(startDate);
+    const todayDate = new Date();
+    todayDate.setHours(0,0,0,0);
     
     if (currentScale === 'day') {
         while (curr <= endDate) {
@@ -148,11 +150,19 @@ function renderTimelineHeader() {
             const dayOfWeek = curr.getDay();
             if (dayOfWeek === 0) el.classList.add('sunday');
             if (dayOfWeek === 6) el.classList.add('saturday');
+            
+            if (curr.getFullYear() === todayDate.getFullYear() && 
+                curr.getMonth() === todayDate.getMonth() && 
+                curr.getDate() === todayDate.getDate()) {
+                el.classList.add('today');
+            }
+            
             el.textContent = `${curr.getMonth() + 1}/${curr.getDate()}`;
             el.style.minWidth = `${pxPerDay}px`;
             elements.timelineHeader.appendChild(el);
             curr.setDate(curr.getDate() + 1);
         }
+        
         const days = Math.round((endDate - startDate) / DAY_MS) + 1;
         elements.timelineBody.style.width = `${days * pxPerDay}px`;
         elements.timelineBody.style.backgroundSize = `${pxPerDay}px var(--cell-height)`;
@@ -390,6 +400,21 @@ function renderTasks() {
         
         elements.timelineBody.appendChild(tRow);
     });
+    
+    // Render Today Marker
+    const todayDate = new Date();
+    const startLocal = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const todayLocal = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+    const endLocal = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    
+    if (todayLocal >= startLocal && todayLocal <= endLocal) {
+        const leftDays = (todayLocal - startLocal) / DAY_MS;
+        const marker = document.createElement('div');
+        marker.className = 'today-marker';
+        marker.style.left = `${leftDays * pxPerDay}px`;
+        marker.style.width = `${pxPerDay}px`;
+        elements.timelineBody.appendChild(marker);
+    }
 }
 
 function makeDraggable(bar, task) {
