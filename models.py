@@ -19,6 +19,7 @@ class Task(Base):
     parent_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     sort_order = Column(Integer, default=0)
     color = Column(String, default="#3b82f6")
+    memo = Column(String, default="")
 
 # Pydantic Schemas
 class TaskBase(BaseModel):
@@ -32,6 +33,7 @@ class TaskBase(BaseModel):
     parent_id: Optional[int] = None
     sort_order: int = 0
     color: str = "#3b82f6"
+    memo: str = ""
 
 class TaskCreate(TaskBase):
     pass
@@ -47,6 +49,7 @@ class TaskUpdate(BaseModel):
     parent_id: Optional[int] = None
     sort_order: Optional[int] = None
     color: Optional[str] = None
+    memo: Optional[str] = None
 
 class TaskOut(TaskBase):
     id: int

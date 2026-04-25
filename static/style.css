@@ -211,6 +211,17 @@ body {
 }
 .task-row:hover .drag-handle { opacity: 1; }
 
+.memo-icon {
+    margin-left: 8px;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: help;
+    transition: color 0.2s;
+}
+.memo-icon:hover {
+    color: var(--accent);
+}
+
 /* Timeline Panel */
 .timeline-panel {
     flex: 1;
@@ -280,6 +291,17 @@ body {
 
 .gantt-bar:active { cursor: grabbing; }
 .gantt-bar:hover { box-shadow: 0 4px 15px var(--accent-glow); }
+
+.bar-memo-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    z-index: 5;
+    pointer-events: none;
+}
 
 .gantt-bar .progress-fill {
     position: absolute;

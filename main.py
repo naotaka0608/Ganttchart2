@@ -22,7 +22,8 @@ if __name__ == '__main__':
         'http://127.0.0.1:8000/',
         width=1200,
         height=800,
-        min_size=(800, 600)
+        min_size=(800, 600),
+        maximized=True
     )
     
     webview.start()

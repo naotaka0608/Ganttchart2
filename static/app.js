@@ -239,18 +239,18 @@ function renderTasks() {
         const listRow = document.createElement('div');
         listRow.className = 'task-row' + (task.milestone ? ' milestone' : '') + (isSubTask ? ' sub-task' : '');
         
-        let toggleHTML = '';
-        if (hasChildren) {
-            toggleHTML = `<i class="ph-bold ph-caret-down tree-toggle ${isCollapsed ? 'collapsed' : ''}" data-id="${task.id}"></i>`;
-        } else if (!isSubTask) {
-            toggleHTML = `<span style="display:inline-block; width:20px;"></span>`;
-        }
+        const toggleHTML = hasChildren 
+            ? `<i class="ph ph-caret-down tree-toggle ${isCollapsed ? 'collapsed' : ''}" data-id="${task.id}"></i>` 
+            : `<span style="display:inline-block; width:20px;"></span>`;
+            
+        const memoIcon = task.memo ? `<i class="ph ph-info memo-icon" title="${task.memo}"></i>` : '';
 
         listRow.innerHTML = `
             <div class="col-name">
                 <i class="ph ph-dots-six-vertical drag-handle"></i>
                 ${toggleHTML}
-                ${task.name}
+                <span>${task.name}</span>
+                ${memoIcon}
             </div>
             <div class="col-assignee">${task.assignee || ''}</div>
             <div class="col-date">${task.start_date}</div>
@@ -326,24 +326,33 @@ function renderTasks() {
         
         if (sd >= startDate && sd <= endDate) {
             const leftDays = (sd - startDate) / DAY_MS;
-            const duration = (ed - sd) / DAY_MS + 1; // +1 to include end date fully
+            const duration = (ed - sd) / DAY_MS + 1; 
             
             const bar = document.createElement('div');
             bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '');
             bar.style.left = `${leftDays * pxPerDay}px`;
+            
+            if (task.memo) {
+                bar.title = task.memo;
+            } else {
+                bar.title = task.name;
+            }
+            
             if (task.color) {
                 bar.style.background = task.color;
             }
             
+            const barMemoMark = task.memo ? `<i class="ph ph-chat-text bar-memo-icon"></i>` : '';
+            
             if (!task.milestone) {
                 bar.style.width = `${duration * pxPerDay}px`;
                 bar.innerHTML = `
-                    <div class="progress-fill" style="width: ${task.progress}%"></div>
                     <div class="resize-handle resize-left"></div>
-                    <span class="bar-label">${task.name}</span>
+                    ${barMemoMark}
+                    <div class="progress-fill" style="width: ${task.progress}%"></div>
                     <div class="resize-handle resize-right"></div>
-                    ${task.assignee ? `<span class="assignee-label">${task.assignee}</span>` : ''}
                 `;
+                makeDraggable(bar, task);
             } else {
                 bar.title = task.name;
                 if (task.assignee) {
@@ -502,6 +511,7 @@ function openModal(task = null) {
         document.getElementById('task-end').value = task.end_date;
         document.getElementById('task-progress').value = task.progress;
         document.getElementById('task-assignee').value = task.assignee || '';
+        document.getElementById('task-memo').value = task.memo || '';
         document.getElementById('task-color').value = task.color || '#3b82f6';
         document.getElementById('task-milestone').checked = task.milestone;
     } else {
@@ -510,6 +520,7 @@ function openModal(task = null) {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('task-start').value = today;
         document.getElementById('task-end').value = today;
+        document.getElementById('task-memo').value = '';
         document.getElementById('task-color').value = '#3b82f6';
     }
     
@@ -545,6 +556,7 @@ elements.form.addEventListener('submit', (e) => {
         end_date: document.getElementById('task-end').value,
         progress: parseFloat(document.getElementById('task-progress').value),
         assignee: document.getElementById('task-assignee').value,
+        memo: document.getElementById('task-memo').value,
         color: document.getElementById('task-color').value,
         milestone: document.getElementById('task-milestone').checked,
         dependencies: "",
