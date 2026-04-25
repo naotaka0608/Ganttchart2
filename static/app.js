@@ -29,8 +29,13 @@ const elements = {
     btnToday: document.getElementById('btn-today'),
     btnZoomReset: document.getElementById('btn-zoom-reset'),
     zoomPercentage: document.getElementById('zoom-percentage'),
-    scaleBtns: document.querySelectorAll('.scale-btn')
+    scaleBtns: document.querySelectorAll('.scale-btn'),
+    pageTabs: document.getElementById('page-tabs'),
+    btnAddPage: document.getElementById('btn-add-page')
 };
+
+let pages = [];
+let currentPageId = 1;
 
 // Sync vertical scrolling
 elements.timelinePanel.addEventListener('scroll', () => {
@@ -180,7 +185,7 @@ document.getElementById('btn-reset-baseline').addEventListener('click', () => {
 
 async function fetchTasks() {
     try {
-        const res = await fetch('/api/tasks');
+        const res = await fetch(`/api/tasks?page_id=${currentPageId}`);
         tasks = await res.json();
         updateDateRange();
         updateParentSelect();
@@ -691,7 +696,8 @@ elements.form.addEventListener('submit', (e) => {
         color: document.getElementById('task-color').value,
         milestone: document.getElementById('task-milestone').checked,
         dependencies: "",
-        parent_id: parentId ? parseInt(parentId, 10) : null
+        parent_id: parentId ? parseInt(parentId, 10) : null,
+        page_id: currentPageId
     };
 
     if (resetBaselineOnSave) {
@@ -719,4 +725,110 @@ elements.btnExportGantt.addEventListener('click', async () => {
     alert(`デスクトップに保存しました:\n${data.path}`);
 });
 
-fetchTasks();
+async function fetchPages() {
+    try {
+        const res = await fetch('/api/pages');
+        pages = await res.json();
+        if (pages.length > 0 && !pages.find(p => p.id === currentPageId)) {
+            currentPageId = pages[0].id;
+        }
+        renderPages();
+    } catch (e) {
+        console.error('Error fetching pages', e);
+    }
+}
+
+function renderPages() {
+    elements.pageTabs.innerHTML = '';
+    pages.forEach(page => {
+        const tab = document.createElement('div');
+        tab.className = `page-tab ${page.id === currentPageId ? 'active' : ''}`;
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = page.name;
+        tab.appendChild(nameSpan);
+
+        // Delete button for non-primary pages
+        if (pages.length > 1) {
+            const btnDel = document.createElement('i');
+            btnDel.className = 'ph ph-x-circle';
+            btnDel.style.marginLeft = '8px';
+            btnDel.style.fontSize = '14px';
+            btnDel.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deletePage(page.id);
+            });
+            tab.appendChild(btnDel);
+        }
+        
+        tab.addEventListener('dblclick', () => editPageName(page, nameSpan));
+        tab.addEventListener('click', () => {
+            if (currentPageId !== page.id) {
+                currentPageId = page.id;
+                renderPages();
+                fetchTasks();
+            }
+        });
+        elements.pageTabs.appendChild(tab);
+    });
+}
+
+async function addPage() {
+    const name = prompt('新しいページの名前を入力してください:', '新しいチャート');
+    if (!name) return;
+    
+    await fetch('/api/pages', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: name, sort_order: pages.length })
+    });
+    await fetchPages();
+}
+
+async function editPageName(page, span) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = page.name;
+    input.className = 'page-name-edit';
+    
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+    
+    const save = async () => {
+        const newName = input.value.trim();
+        if (newName && newName !== page.name) {
+            await fetch(`/api/pages/${page.id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name: newName })
+            });
+            await fetchPages();
+        } else {
+            input.replaceWith(span);
+        }
+    };
+    
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') save();
+        if (e.key === 'Escape') input.replaceWith(span);
+    });
+}
+
+async function deletePage(id) {
+    if (!confirm('このページとその中のすべてのタスクを削除してよろしいですか？')) return;
+    await fetch(`/api/pages/${id}`, { method: 'DELETE' });
+    if (currentPageId === id) currentPageId = pages.find(p => p.id !== id)?.id || 1;
+    await fetchPages();
+    await fetchTasks();
+}
+
+elements.btnAddPage.addEventListener('click', addPage);
+
+// Initial load
+async function init() {
+    await fetchPages();
+    await fetchTasks();
+}
+init();

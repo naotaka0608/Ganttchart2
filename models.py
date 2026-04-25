@@ -5,10 +5,18 @@ from typing import Optional
 from datetime import date
 
 # SQLAlchemy Models
+class Page(Base):
+    __tablename__ = "pages"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    sort_order = Column(Integer, default=0)
+
 class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
+    page_id = Column(Integer, ForeignKey("pages.id"), nullable=True, default=1)
     name = Column(String, index=True)
     start_date = Column(Date)
     end_date = Column(Date)
@@ -24,7 +32,25 @@ class Task(Base):
     baseline_end = Column(Date, nullable=True)
 
 # Pydantic Schemas
+class PageBase(BaseModel):
+    name: str
+    sort_order: int = 0
+
+class PageCreate(PageBase):
+    pass
+
+class PageUpdate(BaseModel):
+    name: Optional[str] = None
+    sort_order: Optional[int] = None
+
+class PageOut(PageBase):
+    id: int
+    
+    class Config:
+        from_attributes = True
+
 class TaskBase(BaseModel):
+    page_id: int = 1
     name: str
     start_date: date
     end_date: date
@@ -43,6 +69,7 @@ class TaskCreate(TaskBase):
     pass
 
 class TaskUpdate(BaseModel):
+    page_id: Optional[int] = None
     name: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
