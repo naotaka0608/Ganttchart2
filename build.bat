@@ -1,16 +1,17 @@
 @echo off
+chcp 65001 > nul
 echo ===================================
-echo GanttFlow 実行ファイルの作成を開始します
+echo Starting build process for Ganttopia...
 echo ===================================
 
-echo [1/2] PyInstallerをインストール/確認しています...
+echo [1/2] Checking PyInstaller...
 uv pip install pyinstaller
 
-echo [2/2] exeファイルをビルドしています...
-uv run pyinstaller --noconsole --onefile --add-data "static;static" --name "GanttFlow" main.py
+echo [2/2] Building executable...
+uv run pyinstaller --noconsole --onefile --add-data "static;static" --name "Ganttopia" --icon "logo.ico" main.py
 
 echo ===================================
-echo ビルドが完了しました！
-echo 「dist」フォルダの中に「GanttFlow.exe」が作成されています。
+echo Build completed! 
+echo Check the "dist" folder for Ganttopia.exe.
 echo ===================================
 pause
