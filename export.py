@@ -5,7 +5,17 @@ import os
 from pathlib import Path
 
 def get_desktop_path():
-    return str(Path.home() / "Desktop")
+    home = str(Path.home())
+    paths = [
+        os.path.join(home, "OneDrive", "デスクトップ"),
+        os.path.join(home, "OneDrive", "Desktop"),
+        os.path.join(home, "デスクトップ"),
+        os.path.join(home, "Desktop")
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return os.getcwd()
 
 def generate_list_excel(tasks):
     wb = openpyxl.Workbook()
