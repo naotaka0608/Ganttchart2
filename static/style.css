@@ -269,6 +269,17 @@ body {
     position: relative;
 }
 
+.baseline-bar {
+    position: absolute;
+    height: 12px;
+    top: 14px;
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px dashed rgba(0, 0, 0, 0.3);
+    border-radius: var(--gantt-bar-radius);
+    pointer-events: none;
+    z-index: 1;
+}
+
 .gantt-bar {
     position: absolute;
     height: 28px;

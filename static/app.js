@@ -1,6 +1,7 @@
 let currentScale = 'day';
 let pxPerDay = 40;
 const DAY_MS = 24 * 60 * 60 * 1000;
+let resetBaselineOnSave = false;
 
 let tasks = [];
 let startDate = new Date();
@@ -80,6 +81,20 @@ function scrollToToday() {
 // Today button
 elements.btnToday.addEventListener('click', () => {
     scrollToToday();
+});
+
+document.getElementById('btn-reset-baseline').addEventListener('click', () => {
+    resetBaselineOnSave = true;
+    const btn = document.getElementById('btn-reset-baseline');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="ph ph-check"></i> リセット予約済`;
+    btn.style.backgroundColor = 'var(--success)';
+    btn.style.color = 'white';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.backgroundColor = '';
+        btn.style.color = '';
+    }, 2000);
 });
 
 async function fetchTasks() {
@@ -221,21 +236,16 @@ function renderTasks() {
     elements.taskListBody.innerHTML = '';
     elements.timelineBody.innerHTML = '';
     
-    // Sort logic handled mostly by backend or drag-and-drop array order
-    // But tree structure might override visual flat order if we strictly parent-child it.
-    // For simplicity with drag and drop, we'll try to maintain user's flat order as much as possible,
-    // but tree hierarchy is enforced visually.
     const roots = buildTree(tasks);
     const displayTasks = flattenTree(roots);
     
     displayTasks.forEach((task) => {
-        if (task.isHidden) return; // Skip rendering hidden children
+        if (task.isHidden) return;
         
         const hasChildren = task.children && task.children.length > 0;
         const isSubTask = task.level > 0;
         const isCollapsed = collapsedTasks.has(task.id);
         
-        // Task List Row
         const listRow = document.createElement('div');
         listRow.className = 'task-row' + (task.milestone ? ' milestone' : '') + (isSubTask ? ' sub-task' : '');
         
@@ -258,7 +268,6 @@ function renderTasks() {
             <div class="col-progress">${task.progress}%</div>
         `;
         
-        // Toggle click
         const toggleIcon = listRow.querySelector('.tree-toggle');
         if (toggleIcon) {
             toggleIcon.addEventListener('click', (e) => {
@@ -269,14 +278,12 @@ function renderTasks() {
             });
         }
         
-        // Edit click
         listRow.addEventListener('click', (e) => {
             if (!e.target.classList.contains('drag-handle') && !e.target.classList.contains('tree-toggle')) {
                 openModal(task);
             }
         });
         
-        // Drag and drop reordering
         const dragHandle = listRow.querySelector('.drag-handle');
         dragHandle.addEventListener('mousedown', () => listRow.draggable = true);
         listRow.addEventListener('dragend', () => listRow.draggable = false);
@@ -317,51 +324,68 @@ function renderTasks() {
         
         elements.taskListBody.appendChild(listRow);
         
-        // Timeline Row & Bar
         const tRow = document.createElement('div');
         tRow.className = 'gantt-row';
         
-        const sd = new Date(task.start_date);
-        const ed = new Date(task.end_date);
-        
-        if (sd >= startDate && sd <= endDate) {
-            const leftDays = (sd - startDate) / DAY_MS;
-            const duration = (ed - sd) / DAY_MS + 1; 
+        if (task.start_date && task.end_date) {
+            const sd = new Date(task.start_date);
+            const ed = new Date(task.end_date);
             
-            const bar = document.createElement('div');
-            bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '');
-            bar.style.left = `${leftDays * pxPerDay}px`;
-            
-            if (task.memo) {
-                bar.title = task.memo;
-            } else {
-                bar.title = task.name;
-            }
-            
-            if (task.color) {
-                bar.style.background = task.color;
-            }
-            
-            const barMemoMark = task.memo ? `<i class="ph ph-chat-text bar-memo-icon"></i>` : '';
-            
-            if (!task.milestone) {
-                bar.style.width = `${duration * pxPerDay}px`;
-                bar.innerHTML = `
-                    <div class="resize-handle resize-left"></div>
-                    ${barMemoMark}
-                    <div class="progress-fill" style="width: ${task.progress}%"></div>
-                    <div class="resize-handle resize-right"></div>
-                `;
-                makeDraggable(bar, task);
-            } else {
-                bar.title = task.name;
-                if (task.assignee) {
-                    bar.innerHTML = `<span class="assignee-label" style="right:-20px;">${task.assignee}</span>`;
+            if (task.baseline_start && task.baseline_end && !task.milestone) {
+                const bsd = new Date(task.baseline_start);
+                const bed = new Date(task.baseline_end);
+                if (bed >= startDate && bsd <= endDate) {
+                    const bLeftDays = (bsd - startDate) / DAY_MS;
+                    const bDuration = (bed - bsd) / DAY_MS + 1;
+                    
+                    const baselineBar = document.createElement('div');
+                    baselineBar.className = 'baseline-bar';
+                    baselineBar.style.left = `${bLeftDays * pxPerDay}px`;
+                    baselineBar.style.width = `${bDuration * pxPerDay}px`;
+                    baselineBar.title = `当初計画: ${task.baseline_start} 〜 ${task.baseline_end}`;
+                    tRow.appendChild(baselineBar);
                 }
             }
             
-            makeDraggable(bar, task);
-            tRow.appendChild(bar);
+            if (sd >= startDate && sd <= endDate) {
+                const leftDays = (sd - startDate) / DAY_MS;
+                const duration = (ed - sd) / DAY_MS + 1; 
+                
+                const bar = document.createElement('div');
+                bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '');
+                bar.style.left = `${leftDays * pxPerDay}px`;
+                
+                if (task.memo) {
+                    bar.title = task.memo;
+                } else {
+                    bar.title = task.name;
+                }
+                
+                if (task.color) {
+                    bar.style.background = task.color;
+                }
+                
+                const barMemoMark = task.memo ? `<i class="ph ph-chat-text bar-memo-icon"></i>` : '';
+                
+                if (!task.milestone) {
+                    bar.style.width = `${duration * pxPerDay}px`;
+                    bar.innerHTML = `
+                        <div class="resize-handle resize-left"></div>
+                        ${barMemoMark}
+                        <div class="progress-fill" style="width: ${task.progress}%"></div>
+                        <div class="resize-handle resize-right"></div>
+                    `;
+                    makeDraggable(bar, task);
+                } else {
+                    bar.title = task.name;
+                    if (task.assignee) {
+                        bar.innerHTML = `<span class="assignee-label" style="right:-20px;">${task.assignee}</span>`;
+                    }
+                }
+                
+                makeDraggable(bar, task);
+                tRow.appendChild(bar);
+            }
         }
         
         elements.timelineBody.appendChild(tRow);
@@ -399,7 +423,7 @@ function makeDraggable(bar, task) {
         
         if (isResizingRight) {
             let newWidth = initialWidth + dx;
-            if (newWidth < pxPerDay) newWidth = pxPerDay; // min 1 day
+            if (newWidth < pxPerDay) newWidth = pxPerDay;
             const snappedWidth = Math.round(newWidth / pxPerDay) * pxPerDay;
             bar.style.width = `${snappedWidth}px`;
         } else if (isResizingLeft) {
@@ -499,6 +523,7 @@ async function deleteTask(id) {
 }
 
 function openModal(task = null) {
+    resetBaselineOnSave = false;
     elements.form.reset();
     elements.btnDelete.style.display = task ? 'block' : 'none';
     elements.modalTitle.textContent = task ? 'タスク編集' : 'タスク追加';
@@ -524,13 +549,11 @@ function openModal(task = null) {
         document.getElementById('task-color').value = '#3b82f6';
     }
     
-    // Update color swatches
     const currentColor = document.getElementById('task-color').value;
     colorSwatches.forEach(s => {
         s.classList.toggle('active', s.dataset.color === currentColor);
     });
     
-    // Disable self as parent
     const select = document.getElementById('task-parent-id');
     Array.from(select.options).forEach(opt => {
         opt.disabled = task && parseInt(opt.value, 10) === task.id;
@@ -562,6 +585,12 @@ elements.form.addEventListener('submit', (e) => {
         dependencies: "",
         parent_id: parentId ? parseInt(parentId, 10) : null
     };
+
+    if (resetBaselineOnSave) {
+        taskData.baseline_start = taskData.start_date;
+        taskData.baseline_end = taskData.end_date;
+    }
+
     if (id) taskData.id = parseInt(id, 10);
     saveTask(taskData);
 });

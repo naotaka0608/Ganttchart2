@@ -16,6 +16,10 @@ app = FastAPI(title="Gantt Chart API")
 @app.post("/api/tasks", response_model=models.TaskOut)
 def create_task(task: models.TaskCreate, db: Session = Depends(get_db)):
     db_task = models.Task(**task.model_dump())
+    if db_task.baseline_start is None:
+        db_task.baseline_start = db_task.start_date
+    if db_task.baseline_end is None:
+        db_task.baseline_end = db_task.end_date
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
