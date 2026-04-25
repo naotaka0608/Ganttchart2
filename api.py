@@ -24,6 +24,9 @@ def migrate_db():
             if "page_id" not in columns:
                 print("Adding page_id column to tasks table...")
                 conn.execute("ALTER TABLE tasks ADD COLUMN page_id INTEGER DEFAULT 1")
+            if "man_hours" not in columns:
+                print("Adding man_hours column to tasks table...")
+                conn.execute("ALTER TABLE tasks ADD COLUMN man_hours FLOAT DEFAULT 0.0")
     except Exception as e:
         print(f"Migration error: {e}")
 

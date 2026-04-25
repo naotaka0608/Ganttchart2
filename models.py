@@ -28,6 +28,7 @@ class Task(Base):
     sort_order = Column(Integer, default=0)
     color = Column(String, default="#3b82f6")
     memo = Column(String, default="")
+    man_hours = Column(Float, default=0.0)
     baseline_start = Column(Date, nullable=True)
     baseline_end = Column(Date, nullable=True)
 
@@ -62,6 +63,7 @@ class TaskBase(BaseModel):
     sort_order: int = 0
     color: str = "#3b82f6"
     memo: str = ""
+    man_hours: float = 0.0
     baseline_start: Optional[date] = None
     baseline_end: Optional[date] = None
 
@@ -81,6 +83,7 @@ class TaskUpdate(BaseModel):
     sort_order: Optional[int] = None
     color: Optional[str] = None
     memo: Optional[str] = None
+    man_hours: Optional[float] = None
     baseline_start: Optional[date] = None
     baseline_end: Optional[date] = None
 

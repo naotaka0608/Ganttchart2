@@ -35,7 +35,8 @@ const elements = {
     pageModal: document.getElementById('page-modal'),
     pageNameInput: document.getElementById('page-name-input'),
     btnPageSave: document.getElementById('btn-page-save'),
-    btnPageCancel: document.getElementById('btn-page-cancel')
+    btnPageCancel: document.getElementById('btn-page-cancel'),
+    totalManHours: document.getElementById('total-man-hours')
 };
 
 let pages = [];
@@ -193,6 +194,7 @@ async function fetchTasks() {
         tasks = await res.json();
         updateDateRange();
         updateParentSelect();
+        updateSummary();
         render();
         if (isFirstLoad) {
             setTimeout(scrollToToday, 50);
@@ -220,6 +222,12 @@ function updateDateRange() {
     startDate.setDate(startDate.getDate() - 14);
     endDate = new Date(maxDate);
     endDate.setDate(endDate.getDate() + 45);
+}
+
+function updateSummary() {
+    if (!elements.totalManHours) return;
+    const total = tasks.reduce((sum, t) => sum + (t.man_hours || 0), 0);
+    elements.totalManHours.textContent = total.toFixed(1);
 }
 
 function render() {
@@ -363,6 +371,7 @@ function renderTasks() {
                 ${memoIcon}
             </div>
             <div class="col-assignee">${task.assignee || ''}</div>
+            <div class="col-man-hours">${task.man_hours || 0}</div>
             <div class="col-date">${task.start_date}</div>
             <div class="col-date">${task.end_date}</div>
             <div class="col-progress">${task.progress}%</div>
@@ -683,6 +692,7 @@ function openModal(task = null) {
         document.getElementById('task-start').value = task.start_date;
         document.getElementById('task-end').value = task.end_date;
         document.getElementById('task-progress').value = task.progress;
+        document.getElementById('task-man-hours').value = task.man_hours || 0;
         document.getElementById('task-assignee').value = task.assignee || '';
         document.getElementById('task-memo').value = task.memo || '';
         document.getElementById('task-color').value = task.color || '#3b82f6';
@@ -693,6 +703,8 @@ function openModal(task = null) {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('task-start').value = today;
         document.getElementById('task-end').value = today;
+        document.getElementById('task-progress').value = 0;
+        document.getElementById('task-man-hours').value = 0;
         document.getElementById('task-memo').value = '';
         document.getElementById('task-color').value = '#3b82f6';
     }
@@ -726,6 +738,7 @@ elements.form.addEventListener('submit', (e) => {
         start_date: document.getElementById('task-start').value,
         end_date: document.getElementById('task-end').value,
         progress: parseFloat(document.getElementById('task-progress').value),
+        man_hours: parseFloat(document.getElementById('task-man-hours').value || 0),
         assignee: document.getElementById('task-assignee').value,
         memo: document.getElementById('task-memo').value,
         color: document.getElementById('task-color').value,

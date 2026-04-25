@@ -48,6 +48,10 @@
             <button id="btn-add-page" class="btn-icon" title="新しいページを追加">
                 <i class="ph ph-plus-circle"></i>
             </button>
+            <div class="page-summary" id="page-summary">
+                <i class="ph ph-chart-bar"></i>
+                合計工数: <strong id="total-man-hours">0</strong> 時間
+            </div>
         </div>
 
         <main class="main-content">
@@ -57,6 +61,7 @@
                     <div class="task-list-header">
                         <div class="col-name">タスク名</div>
                         <div class="col-assignee">担当者</div>
+                        <div class="col-man-hours">工数(h)</div>
                         <div class="col-date">開始日</div>
                         <div class="col-date">終了日</div>
                         <div class="col-progress">%</div>
@@ -108,14 +113,21 @@
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
+                    <div class="form-group" style="flex: 1;">
+                        <label>予定工数 (h)</label>
+                        <input type="number" id="task-man-hours" min="0" step="0.5" value="0">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
                         <label>進捗率 (%)</label>
                         <input type="number" id="task-progress" min="0" max="100" value="0">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="flex: 1;">
                         <label>担当者</label>
-                        <input type="text" id="task-assignee" placeholder="山田 太郎">
+                        <input type="text" id="task-assignee" placeholder="担当者名">
                     </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group" style="flex: 1;">
                         <label>テーマカラー</label>
                         <div class="color-palette" id="color-palette">
@@ -139,7 +151,7 @@
                 </div>
                 <div class="form-group">
                     <label>メモ / コメント</label>
-                    <textarea id="task-memo" rows="2" placeholder="タスクに関する補足情報などを入力..." style="padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; resize: vertical; outline: none;"></textarea>
+                    <textarea id="task-memo" rows="8" placeholder="タスクに関する詳細なメモや補足情報を入力..." style="padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; resize: vertical; outline: none; min-height: 150px;"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="btn-reset-baseline" style="margin-right: auto;" title="現在の開始・終了日を新しい「当初計画」として保存します">

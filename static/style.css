@@ -207,6 +207,31 @@ body {
     color: var(--accent);
 }
 
+.page-summary {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-main);
+    padding: 6px 16px;
+    border-radius: 30px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.page-summary i {
+    color: var(--accent);
+    font-size: 16px;
+}
+
+.page-summary strong {
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 600;
+}
+
 .page-name-edit {
     border: none;
     background: transparent;
@@ -239,7 +264,7 @@ body {
 
 /* Task List Panel */
 .task-list-panel {
-    width: 550px;
+    width: 600px;
     background: var(--bg-surface);
     border-right: 1px solid var(--border);
     display: flex;
@@ -267,9 +292,10 @@ body {
     white-space: nowrap;
 }
 
-.col-name { flex: 1; display: flex; align-items: center; }
-.col-assignee { width: 90px; }
-.col-date { width: 110px; }
+.col-name { flex: 1; display: flex; align-items: center; min-width: 150px; }
+.col-assignee { width: 80px; }
+.col-man-hours { width: 65px; text-align: center; color: var(--text-secondary); font-size: 13px; }
+.col-date { width: 105px; text-align: center; }
 .col-progress { width: 50px; text-align: right; }
 
 .task-list-body {
@@ -526,9 +552,10 @@ body {
 .modal-content h2 { margin-bottom: 24px; font-size: 20px; }
 .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .form-row { display: flex; gap: 16px; }
-.form-row .form-group { flex: 1; }
-.form-group label { font-size: 14px; color: var(--text-secondary); }
+.form-row .form-group { flex: 1; min-width: 0; }
+.form-group label { font-size: 14px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .form-group input {
+    width: 100%;
     padding: 10px 12px;
     border-radius: 8px;
     border: 1px solid var(--border);
@@ -539,7 +566,24 @@ body {
     transition: border-color 0.2s;
 }
 .form-group input:focus { border-color: var(--accent); }
-.checkbox-group { flex-direction: row; align-items: center; }
+.checkbox-group {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    justify-content: flex-start;
+}
+.checkbox-group input {
+    width: auto !important;
+    margin: 0;
+    cursor: pointer;
+}
+.checkbox-group label {
+    margin: 0;
+    cursor: pointer;
+    white-space: normal;
+}
+
 .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 
 .color-palette {
