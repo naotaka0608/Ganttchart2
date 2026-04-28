@@ -7,8 +7,8 @@ echo ===================================
 echo [1/2] Checking PyInstaller...
 uv pip install pyinstaller
 
-echo [2/2] Building executable...
-uv run pyinstaller --noconsole --onefile --add-data "static;static" --name "Ganttopia" --icon "logo.ico" main.py
+echo [2/2] Building executable (Fast startup mode)...
+uv run pyinstaller --noconsole --onedir --add-data "static;static" --name "Ganttopia" --icon "logo.ico" main.py
 
 echo ===================================
 echo Build completed! 

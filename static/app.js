@@ -50,13 +50,13 @@ elements.taskListBody.addEventListener('scroll', () => {
     elements.timelinePanel.scrollTop = elements.taskListBody.scrollTop;
 });
 
-// Panning with Ctrl + Right Click
+// Panning with Wheel Click (Middle Click)
 let isPanning = false;
 let startPanX = 0;
 let startScrollLeft = 0;
 
 elements.timelinePanel.addEventListener('mousedown', (e) => {
-    if (e.button === 2) {
+    if (e.button === 1) { // 1 is middle button (wheel click)
         e.preventDefault();
         isPanning = true;
         startPanX = e.clientX;
@@ -73,7 +73,7 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener('mouseup', (e) => {
-    if (isPanning && e.button === 2) {
+    if (isPanning && e.button === 1) {
         isPanning = false;
         document.body.style.cursor = 'default';
     }
