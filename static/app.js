@@ -325,6 +325,108 @@ function buildTree(tasks) {
     return roots;
 }
 
+function calculateParentTasks(roots) {
+    function processTask(task) {
+        if (task.children && task.children.length > 0) {
+            task.children.forEach(processTask);
+            
+            let minStart = null;
+            let maxEnd = null;
+            let totalManHours = 0;
+            let totalProgressWeight = 0;
+            let totalProgressWeightDenominator = 0;
+            
+            task.children.forEach(child => {
+                if (child.start_date) {
+                    const cStart = new Date(child.start_date);
+                    if (!minStart || cStart < minStart) minStart = cStart;
+                }
+                if (child.end_date) {
+                    const cEnd = new Date(child.end_date);
+                    if (!maxEnd || cEnd > maxEnd) maxEnd = cEnd;
+                }
+                
+                const cManHours = child.man_hours || 0;
+                totalManHours += cManHours;
+                
+                if (cManHours > 0) {
+                    totalProgressWeight += (child.progress || 0) * cManHours;
+                    totalProgressWeightDenominator += cManHours;
+                } else {
+                    totalProgressWeight += (child.progress || 0);
+                    totalProgressWeightDenominator += 1;
+                }
+            });
+            
+            if (minStart) task.start_date = minStart.toISOString().split('T')[0];
+            if (maxEnd) task.end_date = maxEnd.toISOString().split('T')[0];
+            task.man_hours = totalManHours;
+            task.progress = totalProgressWeightDenominator > 0 
+                ? Math.round(totalProgressWeight / totalProgressWeightDenominator) 
+                : 0;
+        }
+    }
+    roots.forEach(processTask);
+}
+
+function getAllDescendants(task) {
+    let descendants = [];
+    if (task.children) {
+        task.children.forEach(child => {
+            descendants.push(child);
+            descendants = descendants.concat(getAllDescendants(child));
+        });
+    }
+    return descendants;
+}
+
+async function updateParentChain(task) {
+    if (!task.parent_id) return;
+    const parentTask = tasks.find(t => t.id === task.parent_id);
+    if (!parentTask) return;
+    
+    const children = tasks.filter(t => t.parent_id === parentTask.id);
+    let minStart = null;
+    let maxEnd = null;
+    let totalManHours = 0;
+    let totalProgressWeight = 0;
+    let totalProgressWeightDenominator = 0;
+    
+    children.forEach(child => {
+        if (child.start_date) {
+            const cStart = new Date(child.start_date);
+            if (!minStart || cStart < minStart) minStart = cStart;
+        }
+        if (child.end_date) {
+            const cEnd = new Date(child.end_date);
+            if (!maxEnd || cEnd > maxEnd) maxEnd = cEnd;
+        }
+        const cManHours = child.man_hours || 0;
+        totalManHours += cManHours;
+        
+        if (cManHours > 0) {
+            totalProgressWeight += (child.progress || 0) * cManHours;
+            totalProgressWeightDenominator += cManHours;
+        } else {
+            totalProgressWeight += (child.progress || 0);
+            totalProgressWeightDenominator += 1;
+        }
+    });
+    
+    if (minStart) parentTask.start_date = minStart.toISOString().split('T')[0];
+    if (maxEnd) parentTask.end_date = maxEnd.toISOString().split('T')[0];
+    parentTask.man_hours = totalManHours;
+    parentTask.progress = totalProgressWeightDenominator > 0 ? Math.round(totalProgressWeight / totalProgressWeightDenominator) : 0;
+    
+    await fetch(`/api/tasks/${parentTask.id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(parentTask)
+    });
+    
+    await updateParentChain(parentTask);
+}
+
 function flattenTree(roots, result = [], isHidden = false, level = 0, visited = new Set()) {
     roots.forEach(t => {
         if (visited.has(t.id)) return;
@@ -345,6 +447,7 @@ function renderTasks() {
     elements.timelineBody.innerHTML = '';
     
     const roots = buildTree(tasks);
+    calculateParentTasks(roots);
     const displayTasks = flattenTree(roots);
     
     displayTasks.forEach((task) => {
@@ -355,7 +458,7 @@ function renderTasks() {
         const isCollapsed = collapsedTasks.has(task.id);
         
         const listRow = document.createElement('div');
-        listRow.className = 'task-row' + (task.milestone ? ' milestone' : '') + (isSubTask ? ' sub-task' : '');
+        listRow.className = 'task-row' + (task.milestone ? ' milestone' : '') + (isSubTask ? ' sub-task' : '') + (hasChildren ? ' parent-task' : '');
         
         const toggleHTML = hasChildren 
             ? `<i class="ph ph-caret-down tree-toggle ${isCollapsed ? 'collapsed' : ''}" data-id="${task.id}"></i>` 
@@ -461,7 +564,7 @@ function renderTasks() {
                 const duration = (ed - sd) / DAY_MS + 1; 
                 
                 const bar = document.createElement('div');
-                bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '');
+                bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '') + (hasChildren ? ' parent-bar' : '');
                 bar.style.left = `${leftDays * pxPerDay}px`;
                 
                 if (task.memo) {
@@ -472,18 +575,28 @@ function renderTasks() {
                 
                 if (task.color) {
                     bar.style.background = task.color;
+                    if (hasChildren) {
+                        bar.style.setProperty('--parent-color', task.color);
+                    }
                 }
                 
                 const barMemoMark = task.memo ? `<i class="ph ph-chat-text bar-memo-icon"></i>` : '';
                 
                 if (!task.milestone) {
                     bar.style.width = `${duration * pxPerDay}px`;
-                    bar.innerHTML = `
-                        <div class="resize-handle resize-left"></div>
-                        ${barMemoMark}
-                        <div class="progress-fill" style="width: ${task.progress}%"></div>
-                        <div class="resize-handle resize-right"></div>
-                    `;
+                    if (hasChildren) {
+                        bar.innerHTML = `
+                            ${barMemoMark}
+                            <div class="progress-fill" style="width: ${task.progress}%"></div>
+                        `;
+                    } else {
+                        bar.innerHTML = `
+                            <div class="resize-handle resize-left"></div>
+                            ${barMemoMark}
+                            <div class="progress-fill" style="width: ${task.progress}%"></div>
+                            <div class="resize-handle resize-right"></div>
+                        `;
+                    }
                     makeDraggable(bar, task);
                 } else {
                     bar.title = task.name;
@@ -526,6 +639,10 @@ function makeDraggable(bar, task) {
     
     bar.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return; // Only allow left click
+        
+        const hasChildren = task.children && task.children.length > 0;
+        
+        if (hasChildren) return; // 親タスクはドラッグ操作不可（自動計算のみ）
         
         if (e.target.classList.contains('resize-right')) {
             isResizingRight = true;
@@ -618,11 +735,13 @@ function makeDraggable(bar, task) {
 }
 
 async function updateTask(id, data) {
-    await fetch(`/api/tasks/${id}`, {
+    const res = await fetch(`/api/tasks/${id}`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
     });
+    const saved = await res.json();
+    await updateParentChain(saved);
     await fetchTasks();
 }
 
@@ -632,11 +751,13 @@ async function saveTask(data) {
     
     if (!data.id) delete data.id;
     
-    await fetch(url, {
+    const res = await fetch(url, {
         method: method,
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
     });
+    const saved = await res.json();
+    await updateParentChain(saved);
     await fetchTasks();
     closeModal();
 }
@@ -685,6 +806,11 @@ function openModal(task = null) {
     elements.btnDelete.style.display = task ? 'block' : 'none';
     elements.modalTitle.textContent = task ? 'タスク編集' : 'タスク追加';
     
+    document.getElementById('task-start').disabled = false;
+    document.getElementById('task-end').disabled = false;
+    document.getElementById('task-progress').disabled = false;
+    document.getElementById('task-man-hours').disabled = false;
+    
     if (task) {
         document.getElementById('task-id').value = task.id;
         document.getElementById('task-name').value = task.name;
@@ -718,6 +844,14 @@ function openModal(task = null) {
     Array.from(select.options).forEach(opt => {
         opt.disabled = task && parseInt(opt.value, 10) === task.id;
     });
+    
+    const hasChildren = task && task.children && task.children.length > 0;
+    if (hasChildren) {
+        document.getElementById('task-start').disabled = true;
+        document.getElementById('task-end').disabled = true;
+        document.getElementById('task-progress').disabled = true;
+        document.getElementById('task-man-hours').disabled = true;
+    }
     
     elements.modal.classList.add('active');
 }

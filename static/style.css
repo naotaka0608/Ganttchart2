@@ -430,6 +430,53 @@ body {
 .gantt-bar:active { cursor: grabbing; }
 .gantt-bar:hover { box-shadow: 0 4px 15px var(--accent-glow); }
 
+.gantt-bar.parent-bar {
+    height: 12px;
+    top: 14px;
+    background: #1e293b;
+    border: none;
+    border-radius: 2px;
+    box-shadow: none;
+    cursor: default;
+    overflow: visible;
+}
+
+.gantt-bar.parent-bar:hover {
+    box-shadow: none;
+}
+
+.gantt-bar.parent-bar::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid var(--parent-color, #1e293b);
+    border-right: 8px solid transparent;
+}
+
+.gantt-bar.parent-bar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -8px;
+    width: 0;
+    height: 0;
+    border-top: 8px solid var(--parent-color, #1e293b);
+    border-left: 8px solid transparent;
+}
+
+.gantt-bar.parent-bar .progress-fill {
+    background: rgba(255, 255, 255, 0.3);
+    border-right: none;
+    border-radius: 2px 0 0 2px;
+}
+
+.task-row.parent-task .col-name span {
+    font-weight: 600;
+}
+
 .bar-memo-icon {
     position: absolute;
     left: 50%;
