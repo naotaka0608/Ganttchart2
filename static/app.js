@@ -459,6 +459,7 @@ function renderTasks() {
         
         const listRow = document.createElement('div');
         listRow.className = 'task-row' + (task.milestone ? ' milestone' : '') + (isSubTask ? ' sub-task' : '') + (hasChildren ? ' parent-task' : '');
+        listRow.dataset.id = task.id;
         
         const toggleHTML = hasChildren 
             ? `<i class="ph ph-caret-down tree-toggle ${isCollapsed ? 'collapsed' : ''}" data-id="${task.id}"></i>` 
@@ -565,6 +566,7 @@ function renderTasks() {
                 
                 const bar = document.createElement('div');
                 bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '') + (hasChildren ? ' parent-bar' : '');
+                bar.dataset.id = task.id;
                 bar.style.left = `${leftDays * pxPerDay}px`;
                 
                 if (task.memo) {
@@ -741,6 +743,11 @@ async function updateTask(id, data) {
         body: JSON.stringify(data)
     });
     const saved = await res.json();
+    
+    const idx = tasks.findIndex(t => t.id === saved.id);
+    if (idx !== -1) tasks[idx] = saved;
+    else tasks.push(saved);
+    
     await updateParentChain(saved);
     await fetchTasks();
 }
@@ -757,6 +764,11 @@ async function saveTask(data) {
         body: JSON.stringify(data)
     });
     const saved = await res.json();
+    
+    const idx = tasks.findIndex(t => t.id === saved.id);
+    if (idx !== -1) tasks[idx] = saved;
+    else tasks.push(saved);
+    
     await updateParentChain(saved);
     await fetchTasks();
     closeModal();
@@ -1035,3 +1047,75 @@ async function init() {
     await fetchTasks();
 }
 init();
+
+// --- Context Menu Logic ---
+let currentContextTask = null;
+const contextMenu = document.getElementById('context-menu');
+
+document.addEventListener('contextmenu', (e) => {
+    const target = e.target.closest('.task-row') || e.target.closest('.gantt-bar');
+    if (target) {
+        e.preventDefault();
+        const taskId = parseInt(target.dataset.id, 10);
+        currentContextTask = tasks.find(t => t.id === taskId);
+        
+        if (currentContextTask) {
+            contextMenu.style.left = `${e.clientX}px`;
+            contextMenu.style.top = `${e.clientY}px`;
+            contextMenu.classList.add('active');
+        }
+    } else {
+        contextMenu.classList.remove('active');
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (!contextMenu.contains(e.target)) {
+        contextMenu.classList.remove('active');
+    }
+});
+
+document.getElementById('cm-add-child').addEventListener('click', () => {
+    contextMenu.classList.remove('active');
+    if (currentContextTask) {
+        openModal();
+        document.getElementById('task-parent-id').value = currentContextTask.id;
+    }
+});
+
+document.getElementById('cm-duplicate').addEventListener('click', async () => {
+    contextMenu.classList.remove('active');
+    if (currentContextTask) {
+        const copy = { ...currentContextTask };
+        delete copy.id;
+        copy.name = `${copy.name} のコピー`;
+        await saveTask(copy);
+    }
+});
+
+document.getElementById('cm-delete').addEventListener('click', async () => {
+    contextMenu.classList.remove('active');
+    if (currentContextTask) {
+        await deleteTask(currentContextTask.id);
+    }
+});
+
+contextMenu.querySelectorAll('.prog-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        contextMenu.classList.remove('active');
+        if (currentContextTask) {
+            currentContextTask.progress = parseFloat(btn.dataset.prog);
+            await updateTask(currentContextTask.id, currentContextTask);
+        }
+    });
+});
+
+contextMenu.querySelectorAll('.cm-color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', async () => {
+        contextMenu.classList.remove('active');
+        if (currentContextTask) {
+            currentContextTask.color = swatch.dataset.color;
+            await updateTask(currentContextTask.id, currentContextTask);
+        }
+    });
+});
