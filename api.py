@@ -95,10 +95,18 @@ def delete_page(page_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 # CRUD for Tasks
+from sqlalchemy import func
+
 @app.post("/api/tasks", response_model=models.TaskOut)
 def create_task(task: models.TaskCreate, db: Session = Depends(get_db)):
     check_read_only()
     db_task = models.Task(**task.model_dump())
+    
+    # 新規タスクの場合は、一番下に追加されるように sort_order を最大値+1に設定
+    if db_task.sort_order == 0:
+        max_sort = db.query(func.max(models.Task.sort_order)).filter(models.Task.page_id == db_task.page_id).scalar()
+        db_task.sort_order = (max_sort or 0) + 1
+        
     if db_task.baseline_start is None:
         db_task.baseline_start = db_task.start_date
     if db_task.baseline_end is None:

@@ -533,7 +533,7 @@ function renderTasks() {
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ task_ids: taskIds })
                 });
-                render();
+                await fetchTasks();
             }
         });
         
