@@ -44,6 +44,9 @@
                     <button id="btn-add-task" class="btn btn-primary">
                         <i class="ph ph-plus"></i> タスク追加
                     </button>
+                    <button id="btn-settings" class="btn btn-secondary" title="表示設定">
+                        <i class="ph ph-gear"></i>
+                    </button>
             </div>
         </header>
 
@@ -229,6 +232,40 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content glass-effect">
+            <h2>表示設定</h2>
+            <div class="settings-group">
+                <div class="setting-item">
+                    <label class="switch-label">
+                        <input type="checkbox" id="setting-show-diff" checked>
+                        <span class="switch-text">延長・短縮（差分）を表示する</span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label class="switch-label">
+                        <input type="checkbox" id="setting-show-pattern" checked>
+                        <span class="switch-text">枠内の斜線パターンを表示する</span>
+                    </label>
+                </div>
+                <div class="setting-item vertical">
+                    <label class="setting-label">子タスクの太さ</label>
+                    <div class="thickness-selector">
+                        <input type="range" id="setting-bar-thickness" min="1" max="3" step="1" value="2">
+                        <div class="thickness-labels">
+                            <span>細め</span>
+                            <span>標準</span>
+                            <span>太め</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-settings-close" class="btn btn-primary">閉じる</button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>

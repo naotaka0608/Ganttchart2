@@ -171,6 +171,24 @@ def export_gantt(db: Session = Depends(get_db)):
     file_path = export.generate_gantt_excel(tasks)
     return {"ok": True, "path": file_path}
 
+# Settings API
+@app.get("/api/settings")
+def get_settings(db: Session = Depends(get_db)):
+    db_settings = db.query(models.Setting).all()
+    return {s.key: s.value for s in db_settings}
+
+@app.post("/api/settings")
+def update_setting(setting: models.SettingBase, db: Session = Depends(get_db)):
+    check_read_only()
+    db_setting = db.query(models.Setting).filter(models.Setting.key == setting.key).first()
+    if db_setting:
+        db_setting.value = setting.value
+    else:
+        db_setting = models.Setting(key=setting.key, value=setting.value)
+        db.add(db_setting)
+    db.commit()
+    return {"ok": True}
+
 # Serve static files
 def get_base_path():
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):

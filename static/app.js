@@ -37,11 +37,51 @@ const elements = {
     pageNameInput: document.getElementById('page-name-input'),
     btnPageSave: document.getElementById('btn-page-save'),
     btnPageCancel: document.getElementById('btn-page-cancel'),
-    totalManHours: document.getElementById('total-man-hours')
+    totalManHours: document.getElementById('total-man-hours'),
+    btnSettings: document.getElementById('btn-settings'),
+    settingsModal: document.getElementById('settings-modal'),
+    btnSettingsClose: document.getElementById('btn-settings-close'),
+    settingShowDiff: document.getElementById('setting-show-diff'),
+    settingShowPattern: document.getElementById('setting-show-pattern'),
+    settingBarThickness: document.getElementById('setting-bar-thickness')
 };
 
 let pages = [];
 let currentPageId = 1;
+
+function updateDiffState(bar) {
+    if (!bar.style.getPropertyValue('--planned-left')) return;
+    
+    const actualLeft = parseFloat(bar.style.left) || 0;
+    const actualWidth = parseFloat(bar.style.width) || 0;
+    const actualRight = actualLeft + actualWidth;
+    
+    bar.style.setProperty('--actual-left', `${actualLeft}px`);
+    bar.style.setProperty('--actual-right', `${actualRight}px`);
+    
+    const plannedLeft = parseFloat(bar.style.getPropertyValue('--planned-left'));
+    const plannedRight = parseFloat(bar.style.getPropertyValue('--planned-right'));
+    
+    if (actualLeft < plannedLeft) {
+        bar.classList.add('is-extended-left');
+        bar.classList.remove('is-shortened-left');
+    } else if (actualLeft > plannedLeft) {
+        bar.classList.add('is-shortened-left');
+        bar.classList.remove('is-extended-left');
+    } else {
+        bar.classList.remove('is-extended-left', 'is-shortened-left');
+    }
+    
+    if (actualRight > plannedRight) {
+        bar.classList.add('is-extended-right');
+        bar.classList.remove('is-shortened-right');
+    } else if (actualRight < plannedRight) {
+        bar.classList.add('is-shortened-right');
+        bar.classList.remove('is-extended-right');
+    } else {
+        bar.classList.remove('is-extended-right', 'is-shortened-right');
+    }
+}
 
 // Sync vertical scrolling
 elements.timelinePanel.addEventListener('scroll', () => {
@@ -188,6 +228,95 @@ document.getElementById('btn-reset-baseline').addEventListener('click', () => {
         btn.style.color = '';
     }, 2000);
 });
+
+// Settings Modal logic
+elements.btnSettings.addEventListener('click', () => {
+    elements.settingsModal.classList.add('active');
+});
+
+elements.btnSettingsClose.addEventListener('click', () => {
+    elements.settingsModal.classList.remove('active');
+});
+
+window.addEventListener('click', (e) => {
+    if (e.target === elements.settingsModal) {
+        elements.settingsModal.classList.remove('active');
+    }
+});
+
+elements.settingShowDiff.addEventListener('change', async (e) => {
+    document.body.classList.toggle('hide-diff', !e.target.checked);
+    await saveSetting('setting-show-diff', e.target.checked.toString());
+});
+
+elements.settingShowPattern.addEventListener('change', async (e) => {
+    document.body.classList.toggle('hide-pattern', !e.target.checked);
+    await saveSetting('setting-show-pattern', e.target.checked.toString());
+});
+
+elements.settingBarThickness.addEventListener('input', async (e) => {
+    setBarThickness(e.target.value);
+    await saveSetting('setting-bar-thickness', e.target.value);
+});
+
+async function saveSetting(key, value) {
+    if (appMode === 'read-only') return;
+    try {
+        await fetch('/api/settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ key, value })
+        });
+    } catch (e) {
+        console.error('Error saving setting', e);
+    }
+}
+
+function setBarThickness(level) {
+    let barH, barT, diffH, diffT;
+    
+    if (level == "1") { // Thin (16px)
+        barH = 16; barT = 12;
+        diffH = 24; diffT = -4; 
+    } else if (level == "3") { // Thick (34px)
+        barH = 34; barT = 3;
+        diffH = 38; diffT = -2; 
+    } else { // Normal (2) (28px)
+        barH = 28; barT = 6;
+        diffH = 36; diffT = -4; 
+    }
+    
+    document.documentElement.style.setProperty('--bar-height', `${barH}px`);
+    document.documentElement.style.setProperty('--bar-top', `${barT}px`);
+    document.documentElement.style.setProperty('--diff-height', `${diffH}px`);
+    document.documentElement.style.setProperty('--diff-top', `${diffT}px`);
+    document.documentElement.style.setProperty('--baseline-height', `${diffH}px`);
+    document.documentElement.style.setProperty('--baseline-top', `${barT + diffT}px`);
+}
+
+// Load settings
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        const settings = await res.json();
+        
+        const showDiff = settings['setting-show-diff'] !== 'false';
+        const showPattern = settings['setting-show-pattern'] !== 'false';
+        const thickness = settings['setting-bar-thickness'] || "2";
+        
+        elements.settingShowDiff.checked = showDiff;
+        elements.settingShowPattern.checked = showPattern;
+        elements.settingBarThickness.value = thickness;
+        
+        document.body.classList.toggle('hide-diff', !showDiff);
+        document.body.classList.toggle('hide-pattern', !showPattern);
+        setBarThickness(thickness);
+    } catch (e) {
+        console.error('Error loading settings', e);
+    }
+}
+
+loadSettings();
 
 async function fetchTasks() {
     try {
@@ -566,10 +695,30 @@ function renderTasks() {
                 const leftDays = (sd - startDate) / DAY_MS;
                 const duration = (ed - sd) / DAY_MS + 1; 
                 
+                let statusClass = '';
+                let plannedLeft = 0;
+                let plannedWidth = 0;
+                let plannedRight = 0;
+                let hasBaseline = false;
+                
+                if (task.baseline_start && task.baseline_end && !task.milestone) {
+                    hasBaseline = true;
+                    const bsd = new Date(task.baseline_start);
+                    const bed = new Date(task.baseline_end);
+                    plannedLeft = ((bsd - startDate) / DAY_MS) * pxPerDay;
+                    plannedWidth = ((bed - bsd) / DAY_MS + 1) * pxPerDay;
+                    plannedRight = plannedLeft + plannedWidth;
+                }
+                
                 const bar = document.createElement('div');
                 bar.className = 'gantt-bar' + (task.milestone ? ' milestone' : '') + (hasChildren ? ' parent-bar' : '');
                 bar.dataset.id = task.id;
                 bar.style.left = `${leftDays * pxPerDay}px`;
+                
+                if (hasBaseline) {
+                    bar.style.setProperty('--planned-left', `${plannedLeft}px`);
+                    bar.style.setProperty('--planned-right', `${plannedRight}px`);
+                }
                 
                 if (task.memo) {
                     bar.title = task.memo;
@@ -589,9 +738,15 @@ function renderTasks() {
                 if (!task.milestone) {
                     bar.style.width = `${duration * pxPerDay}px`;
                     if (hasChildren) {
-                        bar.innerHTML = `${barMemoMark}<div class="progress-fill" style="width: ${task.progress}%"></div>`;
+                        bar.innerHTML = `
+                            <div class="gantt-diff-left"></div>
+                            <div class="gantt-diff-right"></div>
+                            ${barMemoMark}<div class="progress-fill" style="width: ${task.progress}%"></div>
+                        `;
                     } else {
                         bar.innerHTML = `
+                            <div class="gantt-diff-left"></div>
+                            <div class="gantt-diff-right"></div>
                             <div class="resize-handle resize-left"></div>
                             ${barMemoMark}
                             <div class="progress-fill" style="width: ${task.progress}%"></div>
@@ -601,6 +756,10 @@ function renderTasks() {
                 } else {
                     bar.style.width = '24px'; 
                     bar.innerHTML = `${barMemoMark}<span class="milestone-label">${task.name}</span>`;
+                }
+                
+                if (hasBaseline) {
+                    updateDiffState(bar);
                 }
                 
                 if (appMode !== 'read-only') {
@@ -698,6 +857,8 @@ function makeDraggable(bar, task) {
             const snappedLeft = Math.round(newLeft / pxPerDay) * pxPerDay;
             bar.style.left = `${snappedLeft}px`;
         }
+        
+        updateDiffState(bar);
     });
     
     document.addEventListener('mouseup', async (e) => {

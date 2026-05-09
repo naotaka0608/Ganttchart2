@@ -16,6 +16,14 @@
     --gantt-bar-radius: 6px;
     --cell-width: 40px;
     --cell-height: 40px;
+
+    /* Thickness variables */
+    --bar-height: 28px;
+    --bar-top: 6px;
+    --diff-height: 36px;
+    --diff-top: -4px;
+    --baseline-height: 36px;
+    --baseline-top: 2px;
 }
 
 * {
@@ -398,19 +406,20 @@ body {
 
 .baseline-bar {
     position: absolute;
-    height: 12px;
-    top: 14px;
-    background: rgba(0, 0, 0, 0.1);
-    border: 1px dashed rgba(0, 0, 0, 0.3);
-    border-radius: var(--gantt-bar-radius);
+    height: var(--baseline-height);
+    top: var(--baseline-top);
+    background: rgba(100, 116, 139, 0.05);
+    border: 2px dashed rgba(100, 116, 139, 0.5);
+    border-radius: calc(var(--gantt-bar-radius) + 2px);
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
+    box-sizing: border-box;
 }
 
 .gantt-bar {
     position: absolute;
-    height: 28px;
-    top: 6px;
+    height: var(--bar-height);
+    top: var(--bar-top);
     background: var(--gantt-bar-bg);
     border-radius: var(--gantt-bar-radius);
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
@@ -424,11 +433,67 @@ body {
     text-shadow: 0 1px 2px rgba(255,255,255,0.5);
     color: #ffffff;
     user-select: none;
-    overflow: hidden;
+    overflow: visible !important;
 }
 
 .gantt-bar:active { cursor: grabbing; }
 .gantt-bar:hover { box-shadow: 0 4px 15px var(--accent-glow); }
+
+/* Diff Indicators (Extended/Shortened) */
+.gantt-diff-left, .gantt-diff-right {
+    position: absolute;
+    top: var(--diff-top);
+    height: var(--diff-height); /* Default for regular tasks (28px height + 4px top/bottom padding) */
+    pointer-events: none;
+    z-index: 10;
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: none;
+}
+
+/* Parent bar specific diff styling to prevent overflowing into the next row */
+.gantt-bar.parent-bar .gantt-diff-left,
+.gantt-bar.parent-bar .gantt-diff-right {
+    top: 0;
+    height: 100%; /* Match the parent-bar height (12px) */
+    border-width: 1px; /* Thinner border for smaller bars */
+}
+
+/* Extended Left (Started Early) -> GOOD (Green) */
+.gantt-bar.is-extended-left .gantt-diff-left {
+    display: block;
+    left: 0;
+    width: calc(var(--planned-left) - var(--actual-left));
+    background: repeating-linear-gradient(45deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.1) 5px, rgba(16, 185, 129, 0.3) 5px, rgba(16, 185, 129, 0.3) 10px);
+    border: 2px solid var(--success);
+}
+
+/* Shortened Left (Started Late) -> BAD (Red) */
+.gantt-bar.is-shortened-left .gantt-diff-left {
+    display: block;
+    right: 100%;
+    width: calc(var(--actual-left) - var(--planned-left));
+    background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.2) 5px, rgba(239, 68, 68, 0.4) 5px, rgba(239, 68, 68, 0.4) 10px);
+    border: 2px solid var(--danger);
+}
+
+/* Extended Right (Ended Late) */
+.gantt-bar.is-extended-right .gantt-diff-right {
+    display: block;
+    left: calc(var(--planned-right) - var(--actual-left));
+    width: calc(var(--actual-right) - var(--planned-right));
+    background: repeating-linear-gradient(-45deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.2) 5px, rgba(239, 68, 68, 0.4) 5px, rgba(239, 68, 68, 0.4) 10px);
+    border: 2px solid var(--danger);
+}
+
+/* Shortened Right (Ended Early) */
+.gantt-bar.is-shortened-right .gantt-diff-right {
+    display: block;
+    left: 100%;
+    width: calc(var(--planned-right) - var(--actual-right));
+    background: repeating-linear-gradient(-45deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.1) 5px, rgba(16, 185, 129, 0.3) 5px, rgba(16, 185, 129, 0.3) 10px);
+    border: 2px solid var(--success);
+}
 
 .gantt-bar.parent-bar {
     height: 12px;
@@ -611,6 +676,81 @@ body {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* Settings Styles */
+.settings-group {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+}
+
+.switch-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.switch-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.setting-item.vertical {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.setting-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.thickness-selector {
+    width: 100%;
+    padding: 0 10px;
+}
+
+.thickness-selector input[type="range"] {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.thickness-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.modal-footer {
+    margin-top: 32px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Toggles */
+body.hide-diff .gantt-diff-left,
+body.hide-diff .gantt-diff-right {
+    display: none !important;
+}
+
+body.hide-pattern .gantt-diff-left,
+body.hide-pattern .gantt-diff-right {
+    background: none !important;
+}
+
 .modal-content {
     background-color: var(--bg-surface);
     width: 95%;

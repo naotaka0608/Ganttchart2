@@ -32,6 +32,12 @@ class Task(Base):
     baseline_start = Column(Date, nullable=True)
     baseline_end = Column(Date, nullable=True)
 
+class Setting(Base):
+    __tablename__ = "settings"
+    
+    key = Column(String, primary_key=True, index=True)
+    value = Column(String)
+
 # Pydantic Schemas
 class PageBase(BaseModel):
     name: str
@@ -90,5 +96,13 @@ class TaskUpdate(BaseModel):
 class TaskOut(TaskBase):
     id: int
 
+    class Config:
+        from_attributes = True
+
+class SettingBase(BaseModel):
+    key: str
+    value: str
+
+class SettingOut(SettingBase):
     class Config:
         from_attributes = True
