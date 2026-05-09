@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 import models
-from database import engine, get_db
+from database import engine, get_db, is_read_only
 import export
 import os
 import sys
@@ -30,10 +30,20 @@ def migrate_db():
     except Exception as e:
         print(f"Migration error: {e}")
 
-migrate_db()
-models.Base.metadata.create_all(bind=engine)
+if not is_read_only:
+    migrate_db()
+    models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Ganttopia API")
+
+def check_read_only():
+    if is_read_only:
+        raise HTTPException(status_code=403, detail="Read-only mode: changes are not allowed.")
+
+@app.get("/api/status")
+def get_status():
+    return {"mode": "read-only" if is_read_only else "read-write"}
+
 
 # Initialization: Ensure at least one page exists
 @app.on_event("startup")
@@ -52,6 +62,7 @@ def read_pages(db: Session = Depends(get_db)):
 
 @app.post("/api/pages", response_model=models.PageOut)
 def create_page(page: models.PageCreate, db: Session = Depends(get_db)):
+    check_read_only()
     db_page = models.Page(**page.model_dump())
     db.add(db_page)
     db.commit()
@@ -60,6 +71,7 @@ def create_page(page: models.PageCreate, db: Session = Depends(get_db)):
 
 @app.put("/api/pages/{page_id}", response_model=models.PageOut)
 def update_page(page_id: int, page: models.PageUpdate, db: Session = Depends(get_db)):
+    check_read_only()
     db_page = db.query(models.Page).filter(models.Page.id == page_id).first()
     if not db_page:
         raise HTTPException(status_code=404, detail="Page not found")
@@ -72,6 +84,7 @@ def update_page(page_id: int, page: models.PageUpdate, db: Session = Depends(get
 
 @app.delete("/api/pages/{page_id}")
 def delete_page(page_id: int, db: Session = Depends(get_db)):
+    check_read_only()
     db_page = db.query(models.Page).filter(models.Page.id == page_id).first()
     if not db_page:
         raise HTTPException(status_code=404, detail="Page not found")
@@ -84,6 +97,7 @@ def delete_page(page_id: int, db: Session = Depends(get_db)):
 # CRUD for Tasks
 @app.post("/api/tasks", response_model=models.TaskOut)
 def create_task(task: models.TaskCreate, db: Session = Depends(get_db)):
+    check_read_only()
     db_task = models.Task(**task.model_dump())
     if db_task.baseline_start is None:
         db_task.baseline_start = db_task.start_date
@@ -105,6 +119,7 @@ class ReorderRequest(BaseModel):
 
 @app.post("/api/tasks/reorder")
 def reorder_tasks(req: ReorderRequest, db: Session = Depends(get_db)):
+    check_read_only()
     for index, task_id in enumerate(req.task_ids):
         db.query(models.Task).filter(models.Task.id == task_id).update({"sort_order": index})
     db.commit()
@@ -112,6 +127,7 @@ def reorder_tasks(req: ReorderRequest, db: Session = Depends(get_db)):
 
 @app.put("/api/tasks/{task_id}", response_model=models.TaskOut)
 def update_task(task_id: int, task: models.TaskUpdate, db: Session = Depends(get_db)):
+    check_read_only()
     db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -126,6 +142,7 @@ def update_task(task_id: int, task: models.TaskUpdate, db: Session = Depends(get
 
 @app.delete("/api/tasks/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db)):
+    check_read_only()
     db_task = db.query(models.Task).filter(models.Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")

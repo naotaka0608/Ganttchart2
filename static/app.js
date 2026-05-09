@@ -1,3 +1,4 @@
+let appMode = 'read-write';
 let currentScale = 'day';
 let pxPerDay = 40;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -514,6 +515,7 @@ function renderTasks() {
         });
         listRow.addEventListener('drop', async (e) => {
             e.preventDefault();
+            if (appMode === 'read-only') return;
             listRow.style.borderTop = '';
             const draggedId = parseInt(e.dataTransfer.getData('text/plain'), 10);
             const targetId = task.id;
@@ -632,6 +634,7 @@ function renderTasks() {
 }
 
 function makeDraggable(bar, task) {
+    if (appMode === 'read-only') return;
     let isResizingRight = false;
     let isResizingLeft = false;
     let isMoving = false;
@@ -813,6 +816,7 @@ function showConfirm(title, message) {
 }
 
 function openModal(task = null) {
+    if (appMode === 'read-only') return;
     resetBaselineOnSave = false;
     elements.form.reset();
     elements.btnDelete.style.display = task ? 'block' : 'none';
@@ -955,7 +959,9 @@ function renderPages() {
             tab.appendChild(btnDel);
         }
         
-        tab.addEventListener('dblclick', () => editPageName(page, nameSpan));
+        tab.addEventListener('dblclick', () => {
+            if (appMode !== 'read-only') editPageName(page, nameSpan);
+        });
         tab.addEventListener('click', () => {
             if (currentPageId !== page.id) {
                 currentPageId = page.id;
@@ -1043,6 +1049,26 @@ elements.btnAddPage.addEventListener('click', addPage);
 
 // Initial load
 async function init() {
+    try {
+        const res = await fetch('/api/status');
+        const status = await res.json();
+        appMode = status.mode;
+        
+        const badge = document.getElementById('app-mode-badge');
+        if (appMode === 'read-only') {
+            document.body.classList.add('readonly-mode');
+            badge.textContent = '読み取り専用モード';
+            badge.className = 'badge-readonly';
+            badge.style.display = 'flex';
+        } else {
+            badge.textContent = 'メインモード (編集可)';
+            badge.className = 'badge-main';
+            badge.style.display = 'flex';
+        }
+    } catch (e) {
+        console.error('Failed to fetch status', e);
+    }
+    
     await fetchPages();
     await fetchTasks();
 }
@@ -1053,6 +1079,10 @@ let currentContextTask = null;
 const contextMenu = document.getElementById('context-menu');
 
 document.addEventListener('contextmenu', (e) => {
+    if (appMode === 'read-only') {
+        e.preventDefault();
+        return;
+    }
     const target = e.target.closest('.task-row') || e.target.closest('.gantt-bar');
     if (target) {
         e.preventDefault();

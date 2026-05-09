@@ -754,3 +754,39 @@ body {
 .cm-color-swatch:hover {
     transform: scale(1.2);
 }
+
+/* Mode Badges */
+.badge-main {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-readonly {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Read-Only Mode Restrictions */
+body.readonly-mode #btn-add-task,
+body.readonly-mode #btn-add-page,
+body.readonly-mode #btn-save,
+body.readonly-mode #btn-delete,
+body.readonly-mode #btn-reset-baseline,
+body.readonly-mode .resize-handle {
+    display: none !important;
+}
+
+body.readonly-mode .gantt-bar {
+    cursor: default !important;
+}
+
+body.readonly-mode .task-row {
+    cursor: pointer !important; /* Still allow viewing details */
+}
+
+body.readonly-mode .drag-handle {
+    display: none !important;
+}
+
