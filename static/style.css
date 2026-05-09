@@ -264,7 +264,7 @@ body {
 
 /* Task List Panel */
 .task-list-panel {
-    width: 600px;
+    width: 750px;
     background: var(--bg-surface);
     border-right: 1px solid var(--border);
     display: flex;
