@@ -589,10 +589,7 @@ function renderTasks() {
                 if (!task.milestone) {
                     bar.style.width = `${duration * pxPerDay}px`;
                     if (hasChildren) {
-                        bar.innerHTML = `
-                            ${barMemoMark}
-                            <div class="progress-fill" style="width: ${task.progress}%"></div>
-                        `;
+                        bar.innerHTML = `${barMemoMark}<div class="progress-fill" style="width: ${task.progress}%"></div>`;
                     } else {
                         bar.innerHTML = `
                             <div class="resize-handle resize-left"></div>
@@ -601,15 +598,14 @@ function renderTasks() {
                             <div class="resize-handle resize-right"></div>
                         `;
                     }
-                    makeDraggable(bar, task);
                 } else {
-                    bar.title = task.name;
-                    if (task.assignee) {
-                        bar.innerHTML = `<span class="assignee-label" style="right:-20px;">${task.assignee}</span>`;
-                    }
+                    bar.style.width = '24px'; 
+                    bar.innerHTML = `${barMemoMark}<span class="milestone-label">${task.name}</span>`;
                 }
                 
-                makeDraggable(bar, task);
+                if (appMode !== 'read-only') {
+                    makeDraggable(bar, task);
+                }
                 tRow.appendChild(bar);
             }
         }
@@ -639,6 +635,7 @@ function makeDraggable(bar, task) {
     let isResizingLeft = false;
     let isMoving = false;
     let startX = 0;
+    let startScrollLeft = 0;
     let initialLeft = 0;
     let initialWidth = 0;
     
@@ -658,6 +655,7 @@ function makeDraggable(bar, task) {
         }
         
         startX = e.clientX;
+        startScrollLeft = elements.timelinePanel.scrollLeft;
         initialLeft = parseFloat(bar.style.left) || 0;
         initialWidth = parseFloat(bar.style.width) || 0;
         document.body.style.cursor = isMoving ? 'grabbing' : 'ew-resize';
@@ -667,32 +665,34 @@ function makeDraggable(bar, task) {
     document.addEventListener('mousemove', (e) => {
         if (!isResizingRight && !isResizingLeft && !isMoving) return;
         
-        const dx = e.clientX - startX;
-        
         if (isResizingRight) {
-            let newWidth = initialWidth + dx;
-            if (newWidth < pxPerDay) newWidth = pxPerDay;
-            const snappedWidth = Math.round(newWidth / pxPerDay) * pxPerDay;
+            const rect = document.querySelector('.timeline-body').getBoundingClientRect();
+            const mouseXCanvas = e.clientX - rect.left;
+            // 右端は「マス目の右側の境界線」にスナップさせるため、Math.ceilを使用する
+            let rightEdge = Math.ceil(mouseXCanvas / pxPerDay) * pxPerDay;
+            let snappedWidth = rightEdge - initialLeft;
+            
+            if (snappedWidth < pxPerDay) snappedWidth = pxPerDay;
             bar.style.width = `${snappedWidth}px`;
         } else if (isResizingLeft) {
-            let newLeft = initialLeft + dx;
-            let newWidth = initialWidth - dx;
+            const rect = document.querySelector('.timeline-body').getBoundingClientRect();
+            const mouseXCanvas = e.clientX - rect.left;
+            let dayIndex = Math.floor(mouseXCanvas / pxPerDay);
+            let snappedLeft = dayIndex * pxPerDay;
+            if (snappedLeft < 0) snappedLeft = 0;
             
-            if (newLeft < 0) {
-                newLeft = 0;
-                newWidth = initialWidth + initialLeft;
+            const rightEdge = initialLeft + initialWidth;
+            // 最小幅（1日分）を確保
+            if (rightEdge - snappedLeft < pxPerDay) {
+                snappedLeft = rightEdge - pxPerDay;
             }
-            if (newWidth < pxPerDay) {
-                newWidth = pxPerDay;
-                newLeft = initialLeft + initialWidth - pxPerDay;
-            }
             
-            const snappedLeft = Math.round(newLeft / pxPerDay) * pxPerDay;
-            const snappedWidth = Math.round(newWidth / pxPerDay) * pxPerDay;
-            
+            const snappedWidth = rightEdge - snappedLeft;
             bar.style.left = `${snappedLeft}px`;
             bar.style.width = `${snappedWidth}px`;
         } else if (isMoving) {
+            const currentScrollLeft = elements.timelinePanel.scrollLeft;
+            const dx = (e.clientX + currentScrollLeft) - (startX + startScrollLeft);
             let newLeft = initialLeft + dx;
             if (newLeft < 0) newLeft = 0;
             const snappedLeft = Math.round(newLeft / pxPerDay) * pxPerDay;
