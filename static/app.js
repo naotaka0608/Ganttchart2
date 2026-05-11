@@ -62,20 +62,22 @@ function updateDiffState(bar) {
     const plannedLeft = parseFloat(bar.style.getPropertyValue('--planned-left'));
     const plannedRight = parseFloat(bar.style.getPropertyValue('--planned-right'));
     
-    if (actualLeft < plannedLeft) {
+    const epsilon = 0.1; // Threshold to handle floating point precision
+    
+    if (actualLeft < plannedLeft - epsilon) {
         bar.classList.add('is-extended-left');
         bar.classList.remove('is-shortened-left');
-    } else if (actualLeft > plannedLeft) {
+    } else if (actualLeft > plannedLeft + epsilon) {
         bar.classList.add('is-shortened-left');
         bar.classList.remove('is-extended-left');
     } else {
         bar.classList.remove('is-extended-left', 'is-shortened-left');
     }
     
-    if (actualRight > plannedRight) {
+    if (actualRight > plannedRight + epsilon) {
         bar.classList.add('is-extended-right');
         bar.classList.remove('is-shortened-right');
-    } else if (actualRight < plannedRight) {
+    } else if (actualRight < plannedRight - epsilon) {
         bar.classList.add('is-shortened-right');
         bar.classList.remove('is-extended-right');
     } else {
