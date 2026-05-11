@@ -599,6 +599,11 @@ function renderTasks() {
             
         const memoIcon = task.memo ? `<i class="ph ph-info memo-icon" title="${task.memo}"></i>` : '';
 
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            return dateStr.replace(/-/g, '/');
+        };
+
         listRow.innerHTML = `
             <div class="col-name">
                 <i class="ph ph-dots-six-vertical drag-handle"></i>
@@ -608,8 +613,8 @@ function renderTasks() {
             </div>
             <div class="col-assignee">${task.assignee || ''}</div>
             <div class="col-man-hours">${task.man_hours || 0}</div>
-            <div class="col-date">${task.start_date}</div>
-            <div class="col-date">${task.end_date}</div>
+            <div class="col-date">${formatDate(task.start_date)}</div>
+            <div class="col-date">${formatDate(task.end_date)}</div>
             <div class="col-progress">${task.progress}%</div>
         `;
         
@@ -1076,14 +1081,24 @@ elements.btnDelete.addEventListener('click', () => {
 });
 
 elements.btnExportList.addEventListener('click', async () => {
-    const res = await fetch('/api/export/list');
-    const data = await res.json();
-    alert(`デスクトップに保存しました:\n${data.path}`);
+    if (window.pywebview && window.pywebview.api) {
+        const path = await window.pywebview.api.export_list();
+        if (path) alert(`保存しました:\n${path}`);
+    } else {
+        const res = await fetch('/api/export/list');
+        const data = await res.json();
+        alert(`デスクトップに保存しました:\n${data.path}`);
+    }
 });
 elements.btnExportGantt.addEventListener('click', async () => {
-    const res = await fetch('/api/export/gantt');
-    const data = await res.json();
-    alert(`デスクトップに保存しました:\n${data.path}`);
+    if (window.pywebview && window.pywebview.api) {
+        const path = await window.pywebview.api.export_gantt();
+        if (path) alert(`保存しました:\n${path}`);
+    } else {
+        const res = await fetch('/api/export/gantt');
+        const data = await res.json();
+        alert(`デスクトップに保存しました:\n${data.path}`);
+    }
 });
 
 async function fetchPages() {

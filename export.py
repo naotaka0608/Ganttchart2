@@ -17,7 +17,7 @@ def get_desktop_path():
             return p
     return os.getcwd()
 
-def generate_list_excel(tasks):
+def generate_list_excel(tasks, file_path=None):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Tasks List"
@@ -29,25 +29,27 @@ def generate_list_excel(tasks):
     for row, t in enumerate(tasks, 2):
         ws.cell(row=row, column=1, value=t.id)
         ws.cell(row=row, column=2, value=t.name)
-        ws.cell(row=row, column=3, value=t.start_date.strftime("%Y-%m-%d") if t.start_date else "")
-        ws.cell(row=row, column=4, value=t.end_date.strftime("%Y-%m-%d") if t.end_date else "")
+        ws.cell(row=row, column=3, value=t.start_date.strftime("%Y/%m/%d") if t.start_date else "")
+        ws.cell(row=row, column=4, value=t.end_date.strftime("%Y/%m/%d") if t.end_date else "")
         ws.cell(row=row, column=5, value=t.progress)
         ws.cell(row=row, column=6, value=t.assignee)
         ws.cell(row=row, column=7, value="Yes" if t.milestone else "No")
         ws.cell(row=row, column=8, value=t.dependencies)
         
-    file_path = os.path.join(get_desktop_path(), "tasks_list.xlsx")
+    if not file_path:
+        file_path = os.path.join(get_desktop_path(), "tasks_list.xlsx")
     wb.save(file_path)
     return file_path
 
-def generate_gantt_excel(tasks):
+def generate_gantt_excel(tasks, file_path=None):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Gantt Chart"
     
     if not tasks:
         ws.cell(row=1, column=1, value="No tasks available")
-        file_path = os.path.join(get_desktop_path(), "gantt_chart.xlsx")
+        if not file_path:
+            file_path = os.path.join(get_desktop_path(), "gantt_chart.xlsx")
         wb.save(file_path)
         return file_path
 
@@ -57,7 +59,8 @@ def generate_gantt_excel(tasks):
     
     if not start_dates or not end_dates:
          ws.cell(row=1, column=1, value="Invalid dates")
-         file_path = os.path.join(get_desktop_path(), "gantt_chart.xlsx")
+         if not file_path:
+            file_path = os.path.join(get_desktop_path(), "gantt_chart.xlsx")
          wb.save(file_path)
          return file_path
 
@@ -65,18 +68,22 @@ def generate_gantt_excel(tasks):
     max_date = max(end_dates)
     
     # Headers
-    ws.cell(row=1, column=1, value="Task Name")
-    ws.cell(row=1, column=2, value="Start Date")
-    ws.cell(row=1, column=3, value="End Date")
+    ws.cell(row=1, column=1, value="タスク名")
+    ws.cell(row=1, column=2, value="担当者")
+    ws.cell(row=1, column=3, value="工数(h)")
+    ws.cell(row=1, column=4, value="開始日")
+    ws.cell(row=1, column=5, value="終了日")
+    ws.cell(row=1, column=6, value="進捗(%)")
     
     current_date = min_date
-    col_idx = 4
+    col_idx = 7
     date_to_col = {}
     while current_date <= max_date:
         cell = ws.cell(row=1, column=col_idx, value=current_date.strftime("%m/%d"))
-        cell.alignment = Alignment(text_rotation=90)
+        # Remove vertical rotation
+        # cell.alignment = Alignment(text_rotation=90)
         date_to_col[current_date] = col_idx
-        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 4
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 6 # Slightly wider for horizontal dates
         current_date += timedelta(days=1)
         col_idx += 1
         
@@ -84,8 +91,11 @@ def generate_gantt_excel(tasks):
     
     for row, t in enumerate(tasks, 2):
         ws.cell(row=row, column=1, value=t.name)
-        ws.cell(row=row, column=2, value=t.start_date.strftime("%Y-%m-%d") if t.start_date else "")
-        ws.cell(row=row, column=3, value=t.end_date.strftime("%Y-%m-%d") if t.end_date else "")
+        ws.cell(row=row, column=2, value=t.assignee or "")
+        ws.cell(row=row, column=3, value=t.man_hours or 0)
+        ws.cell(row=row, column=4, value=t.start_date.strftime("%Y/%m/%d") if t.start_date else "")
+        ws.cell(row=row, column=5, value=t.end_date.strftime("%Y/%m/%d") if t.end_date else "")
+        ws.cell(row=row, column=6, value=t.progress or 0)
         
         if t.start_date and t.end_date:
             curr = t.start_date
@@ -94,6 +104,7 @@ def generate_gantt_excel(tasks):
                     ws.cell(row=row, column=date_to_col[curr]).fill = fill_color
                 curr += timedelta(days=1)
                 
-    file_path = os.path.join(get_desktop_path(), "gantt_chart.xlsx")
+    if not file_path:
+        file_path = os.path.join(get_desktop_path(), "gantt_chart.xlsx")
     wb.save(file_path)
     return file_path
